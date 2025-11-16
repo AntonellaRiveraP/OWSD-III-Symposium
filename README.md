@@ -47,6 +47,7 @@ Asegúrese de tener los siguientes paquetes de R instalados:
 install.packages("tidyverse")
 install.packages("readxl")
 install.packages("formattable")
+install.packages("ggplot2")
 
 📁 Archivos esperados
 
