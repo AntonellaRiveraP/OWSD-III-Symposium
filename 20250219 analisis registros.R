@@ -6,7 +6,7 @@
 # ##################################################
 
 # AVISO IMPORTANTE:
-# Este script ha sido desarrollado por Antonella Rivera para el análisis del III Simposio Nacional de Mujeres en Ciencia de OWSD Honduras.
+# Este script ha sido desarrollado por Antonella Rivera y Larissa Acosta para el análisis del III Simposio Nacional de Mujeres en Ciencia de OWSD Honduras.
 # Si este código es reutilizado para otro propósito, publicación o visualización externa,
 # se solicita de manera amable que se me consulte sobre la posibilidad de autoría/colaboración incluyendo a antonellarivera.p@gmail.com
 # ¡Gracias por contribuir con la visibilidad de las científicas hondureñas!
@@ -308,9 +308,26 @@ plot_categorical_distribution(encuesta_salida, "Networking", "Evaluación: Oport
 
 # Contar participantes en ambos registros-----
 
-nrow(registro_unah) - 47 + nrow(registro_owsd)
+nrow(registro_unah) - length(common_emails) + nrow(registro_owsd)
 
 # 486 participantes en total
 # 358 Presencial
 # 101 Virtual
 
+# Tabla resumen de participantes -----
+resumen <- data.frame(
+  Variable = c("Sexo", "Cargo", "Área OWSD", "Interés en membresía"),
+  Categorías = c(
+    paste(names(table(registro_owsd$Sexo)), table(registro_owsd$Sexo), sep = ": ", collapse = "; "),
+    paste(names(table(registro_owsd$Cargo_categoria)), table(registro_owsd$Cargo_categoria), sep = ": ", collapse = "; "),
+    paste(names(table(registro_owsd$OWSD_Area)), table(registro_owsd$OWSD_Area), sep = ": ", collapse = "; "),
+    paste(names(table(registro_owsd$`Si todavía no eres miembro OWSD-HN, ¿Desea que le contactemos para ser miembro o amigo de OWSD?`)),
+          table(registro_owsd$`Si todavía no eres miembro OWSD-HN, ¿Desea que le contactemos para ser miembro o amigo de OWSD?`),
+          sep = ": ", collapse = "; ")
+  )
+)
+
+formattable(resumen, list(
+  Variable = formatter("span", style = ~ style(color = "#005F73", font.weight = "bold")),
+  Categorías = formatter("span", style = ~ style(font.size = "12px"))
+))
