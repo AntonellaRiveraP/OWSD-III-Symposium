@@ -1,0 +1,575 @@
+---
+title: "Procesos de análisis y visualización de datos del III Simposio Nacional de Mujeres en Ciencia: Experiencia de OWSD Honduras"
+authors:
+  - Antonella Rivera
+  - Larissa Acosta Salgado
+  - Dariana Avila-Velasquez
+  - Karen Orellana
+  - Liliana Nuñez
+  - Eleana Cano Sosa
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    css: owsd-style.css
+    toc: true
+    toc_depth: 2
+    number_sections: true
+---
+
+# ⚠️ AVISO IMPORTANTE
+
+Este script fue desarrollado por **Antonella Rivera**, en representación del equipo de autoras del estudio **“Procesos de análisis y visualización de datos del III Simposio Nacional de Mujeres en Ciencia: Experiencia de OWSD Honduras”**, organizado por **OWSD Honduras**.
+
+Su propósito es **facilitar el análisis y la visualización reproducible** de los datos generados en el marco de dicho evento, promoviendo la ciencia abierta y la transparencia en los procesos de investigación.
+
+En caso de que se desee reutilizar este código, total o parcialmente, con fines académicos, divulgativos o de publicación, se solicita amablemente contactar a la autora principal para coordinar la colaboración y el reconocimiento de autoría correspondiente:
+
+📩 antonellarivera.p@gmail.com
+
+**Agradecemos su interés en fortalecer la visibilidad y el impacto de las científicas hondureñas.**
+
+```{r setup-paleta, include=FALSE}
+
+# Configuración general de chunks
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Paleta de colores oficial OWSD (inspirada en identidad visual institucional)
+owsd_colors <- c(
+  "#005F73", "#0A9396", "#94D2BD", "#2D6A4F", "#EE9B00",
+  "#CA6702", "#BB3E03", "#AE2012", "#9C6644", "#ADB5BD"
+)
+```
+
+```{r carga-datos, include=FALSE}
+
+# Cargar y verificar librerías necesarias
+required_packages <- c("tidyverse", "readxl", "formattable", "rlang")
+
+lapply(required_packages, function(pkg) {
+if (!require(pkg, character.only = TRUE)) {
+stop(
+"Falta instalar el paquete: ", pkg,
+". Ejecuta install.packages('", pkg, "') y vuelve a tejer el documento."
+)
+}
+})
+
+# Verificar existencia de archivos
+data_files <- c("lista_asistencia_unah.xlsx", "lista_asistencia_owsd.xlsx", "encuesta_salida.xlsx")
+missing_files <- data_files[!file.exists(data_files)]
+if (length(missing_files) > 0) {
+  stop("No se encontraron los siguientes archivos necesarios:\n", paste(missing_files, collapse = "\n"))
+}
+
+# Cargar datos desde los archivos Excel
+registro_unah     <- read_excel("lista_asistencia_unah.xlsx", sheet = "Sheet1")
+registro_owsd     <- read_excel("lista_asistencia_owsd.xlsx", sheet = "Respuestas de formulario 1")
+encuesta_salida   <- read_excel("encuesta_salida.xlsx")
+
+```
+
+
+```{r procesamiento-cargos, include=FALSE}
+
+# Procesamiento de cargos institucionales
+
+# Convertir la variable 'Cargo que desempeña' a factor
+registro_owsd$'Cargo que desempeña' <- as.factor(registro_owsd$'Cargo que desempeña')
+invisible(levels(registro_owsd$'Cargo que desempeña'))
+
+# Crear nueva variable categórica 'Cargo_categoria'
+registro_owsd <- registro_owsd %>%
+  mutate(Cargo_categoria = case_when(
+    `Cargo que desempeña` %in% c(
+      "Académico", "Asistente de Cooperación", "Asistente de investigación", "Asistente Técnica",
+      "Asistente Técnico", "Asistente Técnico de Laboratorio", "Asistente técnico pedagógico",
+      "Asistente técnico Unidad de Admisión y Monitoreo Académico", "ATL", "Catedrática posgrado",
+      "Coordinadora Carrera Administración de Empresas Agro.", "Instructor AIII",
+      "Coordinadora del Programa Nacional de Alimentación Escolar", "Director",
+      "Director de la Escuela de Física, UNAH", "Directora", "Directora de Planificación y Gobernabilidad Local",
+      "Docencia", "Docente", "Docente de la Facultad de Posgrado", "Docente e investigadora",
+      "Docente UNAH / Miembro OWSD / Presidenta CBH", "Docente universitario", "Docente-administrativo",
+      "JEFATURA DEPARTAMENTO DE MICROBIOLOGIA", "Jefe de Departamento de Ciencias Nsturales",
+      "Jefe del Bloque de Estructura y Función/ Fundamentación Biologica", "Jefe Departamento de Quimica",
+      "Jefe Departamento Química", "Prodesora", "Profesor", "profesor auxiliar",
+      "Profesor de Laboratorio", "Profesor Titular", "Profesor Titular II",
+      "Profesor titular IV, directora del herbario TEFH", "Profesor-Investigador",
+      "Profesora", "Profesora investigadora", "Profesora Titular II",
+      "Science and biology teacher", "STEAM Teacher", "Vicedecana Facultad de Ciencias Básicas"
+    ) ~ "Académico/Docente",
+    
+    `Cargo que desempeña` %in% c(
+      "Tesista- Bachiller", "Universitario", "Estudiantes", "Estudiantil", "Esrudiante",
+      "estudiante", "Estudiante", "ESTUDIANTE", "Estudiante de química y farmacia",
+      "Alumna", "Alumno"
+    ) ~ "Estudiante",
+    
+    `Cargo que desempeña` %in% c(
+      "Estudiante e Investigadora", "Investigador postdoctoral", "Investigadora",
+      "Investigadora Principal", "Jefa de Investigación en SAN", "Jefe de Investigación",
+      "Socióloga y Especialista en Gestión de Investigación Científica", "doctoranda"
+    ) ~ "Investigador",
+    
+    TRUE ~ "Otro"  
+  ))
+
+# Generar una tabla de frecuencias de 'Cargo_categoria' sin mostrarla en el documento,
+# permitiendo verificar el contenido durante la ejecución sin imprimirlo en el HTML.
+invisible(capture.output(table(registro_owsd$Cargo_categoria)))
+
+```
+
+
+```{r procesamiento-areas-owsd, include=FALSE}
+
+# Clasificación de áreas de conocimiento según categorías OWSD
+
+# Convertir a factor la variable de carrera/profesión
+registro_owsd$`Carrera, profesión u oficio` <- as.factor(registro_owsd$`Carrera, profesión u oficio`)
+invisible(levels(registro_owsd$`Carrera, profesión u oficio`))
+
+# Crear nueva variable categórica "OWSD_Area"
+registro_owsd <- registro_owsd %>%
+  mutate(OWSD_Area = case_when(
+    # Agricultural Sciences
+    `Carrera, profesión u oficio` %in% c(
+      "Ingeniero en Ciencias Forestales", "MSc. en Biotecnología Agrícola",
+      "Ing. Agroindustria Alimentaria", "Gestión Ambiental y Desarrollo Sostenible ( Maestria)", "Master en ciencia y economia del cafe"  
+    ) ~ "Ciencias agrícolas",
+    
+
+    #  Biological Systems and Organisms
+    `Carrera, profesión u oficio` %in% c(
+      "Bilogia", "Biológa", "Bióloga", "Biologia", "Biología",
+      "Carrera de biología", "Ciencias biológicas", "Doctora en biología",
+      "Doctorado en Ciencias Biológicas (Biología)", "Estudiante de biología", "Licenciada en ciencias naturales", "Licda. Ciencias Naturales", "Licda en Recursos Naturales y Ambiente" , "Lic. En ciencias naturales"  ,"Lic. En CCNN","Docente de Ciencias naturales" , "Ciencias naturales"     
+    ) ~ "Sistemas biológicos y organismos",
+    
+    # Chemical Sciences
+    `Carrera, profesión u oficio` %in% c(
+      "Ciencias Químicas y Farmacia", "Facultad de química y farmacia",
+      "Química y farmacia", "Química y Farmacia", "Químico Farmacéutico",
+      "Doctora en Ciencia y Tecnología Química", "Doctora en Química y Farmacia",
+      "Dra en Ciencias Químicas y Farmacia", "Dra en Quimica y farmacia",
+      "Dra QF", "Dra Química y Farmacia", "Química y Farmacia, Investigación de Análisis Químico", 
+      "Estudiante de química y farmacia", "Doctora en ciencia y Tecnología QUímica - PhD"  
+    ) ~ "Ciencias químicas",
+    
+    # Engineering Sciences
+    `Carrera, profesión u oficio` %in% c(
+      "Ingeniera Civil", "Ingeniera Industrial Master en Gestión de Proyectos",
+      "Ingeniera industrial, Master en gestión de proyectos", "Ingeniería Civil",
+      "Ingeniería en gestión de ambiente y desarrollo", "Ingeniería en tecnología alimentaria", "Ingeniería en Sistemas", 
+      "Ing. En mecatronica"
+    ) ~ "Ingenierías",
+    
+    # Mathematical Sciences
+    `Carrera, profesión u oficio` %in% c(
+      "Física", "Master en Física", "Licenciada en Matemática",
+      "Matematicas", "licenciatura en matemática con orientación en ingeniería matemática", "Docente de Matemática"      
+    ) ~ "Ciencias matemáticas",
+    
+    # Medical and Health Sciences
+    `Carrera, profesión u oficio` %in% c(
+      "Medicina", "MEDICINA Y CIRUGÍA", "Medicina y cirugía general",
+      "Medico", "Médico", "Psiquiatra", "Enfermera", "Licenciada en enfermería",
+      "Odontologia", "Odontología", "Nutrición", "Nutricionista",
+      "Estudiante de medicina", "estudiante de odontología", "Tecnología de alimentos", "Tecnología de Alimentos",
+      "Tecnologia en Alimentos"
+    ) ~ "Ciencias de la salud",
+    
+    # Physics
+    `Carrera, profesión u oficio` %in% c(
+      "Física", "Master en Física"
+    ) ~ "Física",
+    
+    # Social and Economic Sciences
+    `Carrera, profesión u oficio` %in% c(
+      "Administracion", "Administración Aduanera", "Administracion y Generación de empresas",
+      "Direccion Empresarial", "Comercio internacional", "Comercio Internacional",
+      "Lic. En Relaciones Internacionales", "Mercadeo", "Mercadotecnia y Master en Gobernanza y DDHH",
+      "MSc. Administración de empresas con orientación en finanzas",
+      "MSc. En gestión de servicios de salud/Lic. En Ciencias Naturales",
+      "Máster en Evaluación del Impacto Ambiental", "Máster en Planificación y Gestión de Riesgos Naturales",
+      "Licenciada en Desarrollo Local","Licenciatura de Letras" , "Socióloga", "Sociología", "Sociologa",
+      "Socióloga y Especialista en Gestión de Investigación Científica",
+      "Técnico en Microfinanzas", "Letraa", "Letras", "Letras y literatura" ,
+      "Docente universitaria UNAH,  escritora y gestora cultural" 
+    ) ~ "Ciencias sociales y económicas",
+    
+    # Structural, Cell, and Molecular Biology
+    `Carrera, profesión u oficio` %in% c(
+      "Microbilogo", "Microbiologa", "Microbióloga", "Microbiologia",
+      "MICROBIOLOGIA", "Microbiología", "Doctora en Microbiología",
+      "Jefe de Investigación"
+    ) ~ "Biología molecular",
+    
+    # Other (Uncategorized)
+    TRUE ~ "Otros"
+  ))
+
+# Generar una tabla de frecuencias de 'OWSD_Area' para verificación interna,
+# pero suprimiendo la impresión en el HTML al usar capture.output() e invisible().
+invisible(capture.output(table(registro_owsd$OWSD_Area)))
+
+```
+
+
+
+```{r procesamiento-unah-encuesta, include=FALSE}
+
+# Procesamiento de datos de participantes UNAH y resultados de encuesta de salida
+
+# Convertir a factor la categoría de participante (UNAH)
+registro_unah$`Categoría del participante` <- as.factor(registro_unah$`Categoría del participante`)
+invisible(levels(registro_unah$`Categoría del participante`))
+
+# Crear nueva columna agrupada: estudiante, académico, investigador y "otros"
+registro_unah$`Categoría del participante2` <- registro_unah$`Categoría del participante`
+levels(registro_unah$`Categoría del participante2`)[c(1,2, 5:8)] <- "Otros"
+
+# Renombrar columnas en encuesta de salida (para facilitar análisis)
+encuesta_salida <- encuesta_salida %>%
+  rename(
+    Edad = "Edad",
+    Ocupación = "Ocupación",
+    Organización = "¿Cómo calificaría los siguientes aspectos del evento? (1 = Muy Malo, 5 = Excelente) [Organización del evento: ⭐️⭐️⭐️⭐️⭐️]",
+    Ponencias = "¿Cómo calificaría los siguientes aspectos del evento? (1 = Muy Malo, 5 = Excelente) [Calidad de las ponencias: ⭐️⭐️⭐️⭐️⭐️]",
+    Relevancia = "¿Cómo calificaría los siguientes aspectos del evento? (1 = Muy Malo, 5 = Excelente) [Relevancia de los temas: ⭐️⭐️⭐️⭐️⭐️]",
+    Logística = "¿Cómo calificaría los siguientes aspectos del evento? (1 = Muy Malo, 5 = Excelente) [Espacio y logística: ⭐️⭐️⭐️⭐️⭐️]",
+    Networking = "¿Cómo calificaría los siguientes aspectos del evento? (1 = Muy Malo, 5 = Excelente) [Oportunidades de networking: ⭐️⭐️⭐️⭐️⭐️]"
+  )
+
+# Ordenar niveles de edad
+encuesta_salida <- encuesta_salida %>%
+  mutate(Edad = factor(Edad, levels = c("15-20", "21-30", "31-40", "41-50", "51+"), ordered = TRUE))
+
+# Normalizar ocupación
+encuesta_salida$Ocupación <- as.factor(encuesta_salida$Ocupación)
+levels(encuesta_salida$Ocupación)[3]  <- "Investigador/a" # Arreglo específico
+
+# Niveles de percepción para todos los aspectos evaluados
+perception_levels <- c("Muy malo", "Malo", "Regular", "Bueno", "Excelente")
+
+# Aplicar niveles ordenados a cada variable de percepción
+encuesta_salida <- encuesta_salida %>%
+  mutate(
+    Organización = factor(trimws(Organización), levels = perception_levels, ordered = TRUE),
+    Ponencias    = factor(trimws(Ponencias),    levels = perception_levels, ordered = TRUE),
+    Relevancia   = factor(trimws(Relevancia),   levels = perception_levels, ordered = TRUE),
+    Logística    = factor(trimws(Logística),    levels = perception_levels, ordered = TRUE),
+    Networking   = factor(trimws(Networking),   levels = perception_levels, ordered = TRUE)
+  )
+
+```
+
+
+```{r comparacion-correos, include=FALSE}
+
+# Comparación de correos electrónicos duplicados entre registros UNAH y OWSD
+
+# Estandarizar correos (minúsculas y sin espacios)
+registro_unah <- registro_unah %>%
+  mutate(Correo_electronico2 = tolower(trimws(`Correo electrónico2`)))
+
+registro_owsd <- registro_owsd %>%
+  mutate(Correo_electronico_contacto = tolower(trimws(`Correo electrónico de contacto`)))
+
+# Renombrar columna para consistencia
+colnames(registro_owsd)[16] <- "Modalidad"
+
+# Identificar correos presentes en ambas bases de datos
+common_emails <- intersect(registro_unah$Correo_electronico2, registro_owsd$Correo_electronico_contacto)
+
+# ⚠️ Comentado para evitar exposición accidental de datos personales
+# print(common_emails)
+
+# Imprimir el número total de correos duplicados
+cat("Total emails in both datasets:", length(common_emails), "\n")
+```
+
+## Descripción del proceso de análisis
+
+El flujo de trabajo contempló la limpieza y estandarización de variables categóricas, la homologación de nombres y niveles, la creación de nuevas categorías (como los cargos institucionales y las áreas de conocimiento según OWSD), y la normalización de texto para evitar duplicados.
+
+Estas transformaciones permitieron preparar adecuadamente los datos provenientes de tres fuentes principales: (1) el registro de participantes gestionado por la Universidad Nacional Autónoma de Honduras (UNAH), (2) el registro complementario de OWSD Honduras, y (3) los resultados de la encuesta de salida aplicada al finalizar el **III Simposio Nacional de Mujeres en Ciencia – OWSD Honduras**.
+
+Se implementaron funciones de los paquetes `tidyverse`, `readxl` y `formattable` para manipular, agrupar y visualizar los datos, incluyendo gráficos personalizados construidos con `ggplot2`. Esta estructura facilitó la elaboración de análisis descriptivos reproducibles y visualizaciones claras y coherentes que permiten comunicar efectivamente los resultados del evento, fortaleciendo así la transparencia y el impacto de las acciones orientadas a la visibilidad de las mujeres en ciencia.
+
+
+```{r funcion-graficar-categorías, include=FALSE}
+
+# Función para generar gráficos de barras horizontales con estilo estandarizado
+
+plot_categorical_distribution <- function(data, column, title) {
+  var_sym <- rlang::sym(column)
+
+  # Resumen de frecuencias
+  data_summary <- data %>%
+    count(!!var_sym) %>%
+    mutate(
+      percentage = n / sum(n) * 100,
+      label = paste0(round(percentage, 1), "%"),
+      !!column := if (is.factor(data[[column]])) {
+        factor(!!var_sym, levels = levels(data[[column]]))
+      } else {
+        as.character(!!var_sym)
+      }
+    )
+
+  # Construcción del gráfico
+  ggplot(data_summary, aes(x = !!sym(column), y = n, fill = !!sym(column))) +
+    geom_bar(stat = "identity", color = "white", size = 0.3) +
+    scale_fill_manual(values = owsd_colors) +
+    coord_flip() +
+    geom_text(
+      aes(label = label, hjust = ifelse(percentage < 10, -0.1, 1.1),
+          color = ifelse(percentage < 10, "#1B263B", "white")),
+      size = 5, fontface = "bold", show.legend = FALSE
+    ) +
+    scale_color_identity() +
+    labs(title = title, x = NULL, y = "Conteo") +
+    theme_minimal(base_family = "sans") +
+    theme(
+      text = element_text(size = 14, family = "sans", color = "#1B263B"),
+      plot.title = element_text(size = 18, face = "bold", color = "#005F73"),
+      axis.text.x = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      legend.position = "none"
+    )
+}
+
+```
+
+# 📊 Gráficas
+## 🧾 Registro OWSD
+
+### 👩‍🔬 Género
+
+La siguiente gráfica muestra cómo se distribuyen los participantes del registro OWSD según la identificación de género que proporcionaron.
+
+```{r grafico-genero}
+
+plot_categorical_distribution(
+  data = registro_owsd,
+  column = "Sexo",
+  title = "Distribución por género – Registro OWSD"
+)
+
+```
+
+### 🧑‍🔬 Cargo institucional
+
+La siguiente gráfica muestra cómo se distribuyen los participantes del registro OWSD según el cargo institucional que reportaron.
+
+```{r grafico-cargo}
+
+plot_categorical_distribution(
+  data = registro_owsd,
+  column = "Cargo_categoria",
+  title = "Distribución por cargo – Registro OWSD"
+)
+
+```
+
+### 🧪 Área de conocimiento (clasificación OWSD)
+
+La siguiente gráfica presenta la distribución de participantes del registro OWSD según su carrera, profesión u oficio, agrupados conforme a las categorías científicas establecidas por OWSD.
+
+```{r grafico-area}
+
+plot_categorical_distribution(
+  data = registro_owsd,
+  column = "OWSD_Area",
+  title = "Distribución de participantes\npor área de conocimiento (OWSD)"
+)
+
+```
+
+### 💻 Modalidad de participación
+
+La siguiente gráfica muestra la proporción de personas participantes en el simposio según la modalidad en que asistieron: virtual o presencial, de acuerdo con el registro OWSD.
+
+```{r grafico-modalidad}
+
+plot_categorical_distribution(
+  data = registro_owsd,
+  column = "Modalidad",
+  title = "Participación presencial vs virtual\n(Registro OWSD)"
+)
+
+```
+
+### 📩 Interés en membresía OWSD-HN
+
+La siguiente gráfica presenta la distribución de personas participantes que expresaron interés en ser contactadas para integrarse como miembros o amigos de OWSD Honduras.
+
+```{r grafico-membresia}
+
+plot_categorical_distribution(
+  data = registro_owsd,
+  column = "Si todavía no eres miembro OWSD-HN, ¿Desea que le contactemos para ser miembro o amigo de OWSD?",
+  title = "Interés en ser contactada para membresía – \nOWSD Honduras"
+)
+
+```
+
+<hr>
+
+## 🏫 Registro UNAH
+
+La siguiente gráfica muestra cómo se distribuyen los participantes registrados a través de la UNAH según su categoría institucional (docente, estudiante, investigador u otros).
+
+```{r grafico-categoria-unah}
+
+# 🏫 Categoría UNAH
+plot_categorical_distribution(
+  data = registro_unah,
+  column = "Categoría del participante2",
+  title = "Distribución por categoría\nRegistro UNAH"
+)
+
+```
+
+<hr>
+
+## 📝 Encuesta de Salida OWSD
+
+La siguiente gráfica presenta la distribución por rangos de edad de las personas participantes que respondieron la encuesta de salida del III Simposio Nacional de Mujeres en Ciencia.
+
+```{r grafico-edad}
+
+plot_categorical_distribution(
+  data = encuesta_salida,
+  column = "Edad",
+  title = "Distribución por edad\nEncuesta de salida"
+)
+
+```
+
+### 💼 Ocupación de las personas encuestadas
+
+La siguiente gráfica muestra la distribución de ocupaciones reportadas por las personas que completaron la encuesta de salida del simposio.
+
+```{r grafico-ocupacion}
+
+plot_categorical_distribution(
+  data = encuesta_salida,
+  column = "Ocupación",
+  title = "Distribución por ocupación\nEncuesta de salida"
+)
+
+```
+
+### ⭐ Evaluación del evento
+
+A continuación se presentan las valoraciones otorgadas por las personas encuestadas sobre distintos aspectos del simposio, utilizando una escala del 1 (muy malo) al 5 (excelente).
+
+```{r grafico-evaluacion-evento}
+
+# Organización del evento
+plot_categorical_distribution(
+  data = encuesta_salida,
+  column = "Organización",
+  title = "Evaluación: Organización\nEncuesta de salida"
+)
+
+# Calidad de las ponencias
+plot_categorical_distribution(
+  data = encuesta_salida,
+  column = "Ponencias",
+  title = "Evaluación: Ponencias\nEncuesta de salida"
+)
+
+# Relevancia de los temas
+plot_categorical_distribution(
+  data = encuesta_salida,
+  column = "Relevancia",
+  title = "Evaluación: Relevancia temática\nEncuesta de salida"
+)
+
+# Espacio y logística
+plot_categorical_distribution(
+  data = encuesta_salida,
+  column = "Logística",
+  title = "Evaluación: Espacio y logística\nEncuesta de salida"
+)
+
+# Oportunidades de networking
+plot_categorical_distribution(
+  data = encuesta_salida,
+  column = "Networking",
+  title = "Evaluación: Networking\nEncuesta de salida"
+)
+
+```
+
+<hr>
+
+## 👥 Participación total
+
+```{r resumen-participantes, include=FALSE}
+
+# Calcular total ajustado eliminando registros duplicados (según correos)
+total_participantes <- nrow(registro_unah) - length(common_emails) + nrow(registro_owsd)
+
+# Tabla resumen de variables clave
+resumen <- data.frame(
+  Variable = c("Sexo", "Cargo", "Área OWSD", "Interés en membresía"),
+  Categorías = c(
+    paste(names(table(registro_owsd$Sexo)), table(registro_owsd$Sexo), sep = ": ", collapse = "; "),
+    paste(names(table(registro_owsd$Cargo_categoria)), table(registro_owsd$Cargo_categoria), sep = ": ", collapse = "; "),
+    paste(names(table(registro_owsd$OWSD_Area)), table(registro_owsd$OWSD_Area), sep = ": ", collapse = "; "),
+    paste(names(table(registro_owsd$`Si todavía no eres miembro OWSD-HN, ¿Desea que le contactemos para ser miembro o amigo de OWSD?`)),
+          table(registro_owsd$`Si todavía no eres miembro OWSD-HN, ¿Desea que le contactemos para ser miembro o amigo de OWSD?`),
+          sep = ": ", collapse = "; ")
+  )
+)
+
+```
+
+
+<div style="font-size: 1.5em; font-weight: bold; color: #005F73; margin-bottom: 0.5em;">
+🧮 Total de participantes registrados: `r total_participantes`
+</div>
+
+*Este número corresponde a la suma consolidada de participantes únicos registrados por UNAH y OWSD Honduras, ajustado por duplicados detectados mediante correo electrónico.*
+
+
+### 📋 Tabla resumen de variables clave (registro OWSD)
+
+```{r imprimir-tabla-resumen, echo=FALSE}
+formattable::formattable(resumen, list(
+  Variable = formatter("span", style = ~ style(color = "#005F73", font.weight = "bold")),
+  Categorías = formatter("span", style = ~ style(font.size = "12px"))
+))
+
+```
+
+## ℹ️ Información del entorno
+
+Este documento fue generado en un entorno de R que incluye las siguientes versiones clave. Esta información se proporciona para asegurar la reproducibilidad del análisis.
+
+```{r version-r-base, echo=FALSE}
+
+cat("Versión de R:", R.version.string, "\n\n")
+cat("Versión del paquete rmarkdown:", as.character(packageVersion("rmarkdown")), "\n")
+
+# Mostrar versiones clave de paquetes 
+
+pkgs <- c("tidyverse", "readxl", "formattable", "rlang", "ggplot2")
+for (p in pkgs) {
+cat("Versión de", p, ":", as.character(packageVersion(p)), "\n")
+}
+
+```
+
+---
+## 📜 Licencia y atribución
+
+© 2025 Antonella Rivera et al.  
+Licencia: [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
+
+Este informe forma parte del proyecto **“Procesos de análisis y visualización de datos del III Simposio Nacional de Mujeres en Ciencia: Experiencia de OWSD Honduras"**.

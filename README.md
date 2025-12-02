@@ -1,69 +1,131 @@
-# OWSD Honduras – III Simposio Nacional de Mujeres en Ciencia  
-**Análisis de Registros y Encuestas de Participación**  
-**Autor:** Antonella Rivera  
-**Fecha:** 19 de febrero de 2025  
+# 📊 Procesos de análisis y visualización de datos del III Simposio Nacional de Mujeres en Ciencia  
+### Experiencia de OWSD Honduras 🇭🇳
 
-## 📌 Descripción
+> Repositorio de análisis reproducible elaborado con R Markdown, como parte del III Simposio Nacional de Mujeres en Ciencia – OWSD Honduras 2025.
 
-Este repositorio contiene el script en R desarrollado para analizar los datos del III Simposio Nacional de Mujeres en Ciencia, organizado por OWSD Honduras. El objetivo del análisis es sistematizar y visualizar los registros de participación (presencial y virtual), así como las respuestas a la encuesta de salida del evento.
+![R](https://img.shields.io/badge/Made%20with-R-blue?logo=r)
+![License: CC BY 4.0](https://img.shields.io/badge/License-CC--BY%204.0-green)
+![Conference: LatinR](https://img.shields.io/badge/Presented%20at-LatinR%202025-orange)
 
-El análisis incluye:
-- Clasificación de participantes por cargo y área de conocimiento
-- Distribución de género y modalidad (presencial/virtual)
-- Análisis de percepciones sobre la organización, relevancia y logística del evento
-- Interés en membresía de OWSD-Honduras
-- Evaluaciones por edad y ocupación
+---
 
-## 👥 Participación Total
+## 🧭 Descripción general
 
-- **486 participantes**
-  - 358 presencial
-  - 101 virtual
-- Participación de estudiantes de secundaria, universitarios, investigadores/as y profesionales de múltiples disciplinas.
+Este repositorio documenta el flujo completo de análisis y visualización de los datos generados durante el **III Simposio Nacional de Mujeres en Ciencia**, organizado por la **Organización para las Mujeres en la Ciencia para el Mundo en Desarrollo (OWSD Honduras)**.  
 
-## 📂 Estructura del script
+El análisis fue elaborado con **R 4.4.3** y **R Markdown 2.29**, aplicando principios de ciencia abierta, reproducibilidad y comunicación científica clara.  
 
-- Carga de librerías y datos
-- Limpieza y clasificación de variables
-- Creación de nuevas categorías (cargo, área de conocimiento, etc.)
-- Visualización de datos (gráficas estandarizadas)
-- Comparación de bases de datos (UNAH vs OWSD)
-- Análisis de percepciones desde la encuesta de salida
+🔗 Sitio oficial del evento:  
+[https://owsd.net/news/iii-simposio-nacional-de-mujeres-en-ciencia-owsd-honduras-2025](https://owsd.net/news/iii-simposio-nacional-de-mujeres-en-ciencia-owsd-honduras-2025)
 
-## 📊 Gráficas generadas
+---
 
-- Distribución por género
-- Distribución por cargo
-- Distribución por área de conocimiento
-- Modalidad de participación
-- Categoría UNAH
-- Evaluaciones del evento (organización, ponencias, logística, networking)
-- Interés en membresía OWSD
+## 🧰 Estructura del repositorio
 
-## ⚙️ Requisitos
+```
+OWSD-III-Symposium/
+├── data/       # Archivos de entrada (.xlsx) — datos crudos
+├── scripts/    # Código fuente en R Markdown
+│   └── Simposio.Rmd
+├── output/     # Informe HTML y visualizaciones exportadas
+│   ├── Simposio.html
+│   └── figuras/
+├── LICENSE     # Licencia Creative Commons
+└── README.md
 
-Asegúrese de tener los siguientes paquetes de R instalados:
+```
+---
 
-install.packages("tidyverse")
-install.packages("readxl")
-install.packages("formattable")
-install.packages("ggplot2")
+## 🚀 Reproducibilidad
 
-📁 Archivos esperados
+Este análisis fue ejecutado en el siguiente entorno:
 
-Coloque los siguientes archivos Excel en la misma carpeta donde se encuentra el script .R:
+- 🧩 **R:** 4.4.3 (2025-02-28 ucrt)  
+- 📦 **Paquetes principales:** `tidyverse`, `readxl`, `formattable`, `rlang`, `ggplot2`, `rmarkdown`  
+- 💻 **Sistema operativo:** Windows 11 x64  
 
-LISTA DE ASISTENCIA PARA EVENTOS - III Simposio Niña en la Ciencia.xlsx
+### ▶️ Para reproducir el análisis:
 
-Registro para el III Simposio Nacional de Mujeres.xlsx
+```r
+# Instalar los paquetes necesarios
+install.packages(c("tidyverse", "readxl", "formattable", "rlang", "ggplot2", "rmarkdown"))
+```
+---
 
-20250219 Encuesta de Salida – III Simposio Nacional de Mujeres en Ciencia.xlsx
+## ▶️ Renderizar el informe
 
-✨ Créditos
+Para generar el informe HTML desde el archivo principal en R Markdown, ejecuta el siguiente comando en R o RStudio:
 
-Este script fue desarrollado por Antonella Rivera para OWSD Honduras.
-Si desea reutilizar este código para propósitos de publicación, presentaciones o productos derivados, por favor escriba a: antonellarivera.p@gmail.com
- para discutir la posibilidad de coautoría o colaboración.
+```r
+rmarkdown::render("scripts/Simposio.Rmd")
+```
+---
 
-Gracias por contribuir con la visibilidad de las científicas hondureñas.
+## 🔍 Flujo de trabajo
 
+El análisis sigue una estructura **reproducible y modular** en R Markdown, basada en principios de **ciencia abierta** y **transparencia metodológica**.
+
+### 🧩 Etapas principales
+
+1. **Carga y verificación de librerías.**  
+   Se asegura que los paquetes necesarios estén instalados antes de continuar.
+
+2. **Integración y limpieza de datos.**  
+   - Homologación de nombres de columnas.  
+   - Normalización de texto y creación de categorías derivadas.
+
+3. **Clasificación OWSD.**  
+   Agrupación de participantes por **cargo institucional** y **área de conocimiento**,  
+   siguiendo las categorías científicas establecidas por OWSD Internacional.
+
+4. **Análisis descriptivo y visualización.**  
+   - Elaboración de gráficos reproducibles con **ggplot2**.  
+   - Uso de la paleta de colores institucional (`owsd_colors`).
+
+5. **Síntesis y reporte.**  
+   Resultados comunicados en formato **HTML** mediante **R Markdown**,  
+   con bloques explicativos y métricas resumidas.
+
+---
+
+## 📈 Resultados destacados
+
+El **III Simposio Nacional de Mujeres en Ciencia – OWSD Honduras** logró una participación significativa y diversa, reflejando el creciente interés por fortalecer el papel de las mujeres en la ciencia en contextos como el hondureño.
+
+🧮 **Total de participantes registrados**: más de **480** personas, combinando registros de la UNAH y OWSD Honduras.
+
+🧑‍🎓 **Amplia representación estudiantil**, acompañada por investigadoras, docentes y profesionales de múltiples disciplinas.
+
+🌎 **Participación nacional e internacional**, tanto presencial como virtual, con representación desde distintas regiones y universidades del país.
+
+💬 **Evaluaciones positivas del evento**, destacando la organización, relevancia de los temas, y las oportunidades de networking científico.
+
+Este nivel de participación demuestra el potencial transformador de espacios colaborativos y equitativos para impulsar el liderazgo científico de las mujeres en América Latina.
+
+---
+
+## 📜 Licencia
+
+Este repositorio y su código se distribuyen bajo la licencia  
+**Creative Commons Attribution 4.0 International (CC BY 4.0)**.
+
+Puedes reutilizar el código total o parcialmente, siempre que cites la fuente y reconozcas a las autoras.
+
+🔗 [Ver licencia completa CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
+---
+
+## ✉️ Contacto
+
+**Antonella Rivera**  
+📩 [antonellarivera.p@gmail.com](mailto:antonellarivera.p@gmail.com)
+
+En representación del equipo de autoras del proyecto:  
+**Antonella Rivera**, **Larissa Acosta Salgado**, **Dariana Ávila-Velásquez**, **Karen Orellana**, **Liliana Núñez** y **Eleana Cano Sosa**.
+
+---
+
+> “OWSD Honduras promueve la visibilidad, colaboración y liderazgo de las mujeres científicas en el país,  
+> impulsando la ciencia abierta y la participación equitativa en la investigación.” 🌎✨
+
+> © 2025 Antonella Rivera *et al.* — Distribuido bajo licencia [Creative Commons CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
